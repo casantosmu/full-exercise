@@ -4,7 +4,7 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
-    "moduleResolution": "node",
+    "types": [],
 
     "strict": true,
     "exactOptionalPropertyTypes": true,
