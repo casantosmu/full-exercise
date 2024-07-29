@@ -3,7 +3,7 @@ export default class ExerciseContext {
   #index;
   #container;
   #exercises;
-  #audio;
+  #sounds;
 
   /**
    * @param {Element} container - The HTML container element for the exercises.
@@ -11,14 +11,16 @@ export default class ExerciseContext {
    * @param {string} exercises[].title - The title of the exercise.
    * @param {string} exercises[].img - The image URL of the exercise.
    * @param {number} exercises[].msDuration - The duration of the exercise in milliseconds.
-   * @param {HTMLAudioElement} audio - The HTML audio element used to play sound when finishing an exercise.
+   * @param {Object} sounds - An object containing the sounds.
+   * @param {HTMLAudioElement} sounds.start - The HTML audio element used to play the start sound.
+   * @param {HTMLAudioElement} sounds.countdown - The HTML audio element used to play the countdown sound.
    */
-  constructor(container, exercises, audio) {
+  constructor(container, exercises, sounds) {
     this.#state = new StartState(this);
     this.#index = 0;
     this.#container = container;
     this.#exercises = exercises;
-    this.#audio = audio;
+    this.#sounds = sounds;
   }
 
   get exercise() {
@@ -42,6 +44,10 @@ export default class ExerciseContext {
   toStart() {
     this.#index = 0;
     this.transitionTo(new StartState(this));
+  }
+
+  toCountdown() {
+    this.transitionTo(new CountdownState(this));
   }
 
   toPlay() {
@@ -71,8 +77,12 @@ export default class ExerciseContext {
     this.transitionTo(new PausedState(this));
   }
 
-  playSound() {
-    this.#audio.play();
+  /**
+   * Plays the specified sound.
+   * @param {'start' | 'countdown'} sound - The sound to play.
+   */
+  playSound(sound) {
+    this.#sounds[sound].play();
   }
 
   /**
@@ -124,19 +134,66 @@ class StartState extends State {
     `);
 
     this.context.onClick("#start-btn", () => {
-      this.context.toPlay();
+      this.context.toCountdown();
     });
   }
 }
 
-class PlayingState extends State {
+class CountdownState extends State {
   render() {
+    let countdown = 3;
+
+    this.context.playSound("countdown");
+    this.context.html(`<h1>${countdown}</h1>`);
+
+    const intervalId = setInterval(() => {
+      countdown--;
+
+      if (countdown > 0) {
+        this.context.playSound("countdown");
+        this.context.html(`<h1>${countdown}</h1>`);
+      } else {
+        clearInterval(intervalId);
+        this.context.playSound("start");
+        this.context.toPlay();
+      }
+    }, 1000);
+  }
+}
+
+class PlayingState extends State {
+  #setupTimer() {
     const exercise = this.context.exercise;
 
-    const timeout = setTimeout(() => {
-      this.context.playSound();
-      this.context.toNext();
-    }, exercise.msDuration);
+    /** @type {number=} */
+    let intervalId;
+
+    const timeoutId = setTimeout(() => {
+      let countdown = 3;
+      this.context.playSound("countdown");
+
+      intervalId = setInterval(() => {
+        countdown--;
+
+        if (countdown > 0) {
+          this.context.playSound("countdown");
+        } else {
+          clearInterval(intervalId);
+          this.context.playSound("start");
+          this.context.toNext();
+        }
+      }, 1000);
+    }, exercise.msDuration - 3000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }
+
+  render() {
+    const clearTimer = this.#setupTimer();
+    const exercise = this.context.exercise;
 
     this.context.html(`
       <section>
@@ -149,15 +206,15 @@ class PlayingState extends State {
     `);
 
     this.context.onClick("#prev-btn", () => {
-      clearTimeout(timeout);
+      clearTimer();
       this.context.toPrevious();
     });
     this.context.onClick("#pause-btn", () => {
-      clearTimeout(timeout);
+      clearTimer();
       this.context.toPause();
     });
     this.context.onClick("#next-btn", () => {
-      clearTimeout(timeout);
+      clearTimer();
       this.context.toNext();
     });
   }
@@ -177,7 +234,7 @@ class PausedState extends State {
     `);
 
     this.context.onClick("#resume-btn", () => {
-      this.context.toPlay();
+      this.context.toCountdown();
     });
     this.context.onClick("#exit-btn", () => {
       this.context.toStart();
