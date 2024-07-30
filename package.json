@@ -2,7 +2,7 @@
   "name": "full-exercise",
   "scripts": {
     "dev": "serve",
-    "build": "shx rm -rf dist && shx mkdir dist && shx cp -r audio css images js index.html dist",
+    "build": "shx rm -rf dist && shx mkdir dist && shx cp -r audio css images js index.html 404.html dist",
     "format": "xo --fix --env=browser && prettier . \"!**/*.min.css\" --write",
     "typecheck": "tsc",
     "preview": "serve dist"
