@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "serve",
     "build": "shx rm -rf dist && shx mkdir dist && shx cp -r audio css images js index.html 404.html dist",
-    "format": "xo --fix --env=browser && prettier . \"!**/*.min.css\" --write",
+    "format": "xo --fix --env=browser --prettier && prettier . \"!**/*.min.css\" --write",
+    "lint": "xo --env=browser --prettier && prettier . \"!**/*.min.css\" --check",
     "typecheck": "tsc",
     "preview": "serve dist"
   },
@@ -13,5 +14,12 @@
     "shx": "^0.3.4",
     "typescript": "^5.5.4",
     "xo": "^0.59.2"
+  },
+  "xo": {
+    "rules": {
+      "prettier/prettier": [
+        "off"
+      ]
+    }
   }
 }
